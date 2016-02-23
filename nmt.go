@@ -1,22 +1,16 @@
 package canopen
 
-// NMTCommand is the type of a NMT command.
-type NMTCommand byte
-
 const (
-	GoToOperational        NMTCommand = 0x1
-	GoToStopped            NMTCommand = 0x2
-	GoToPreOperation       NMTCommand = 0x80
-	GoToResetNode          NMTCommand = 0x81
-	GoToResetCommunication NMTCommand = 0x82
+	GoToOperational        uint8 = 0x1
+	GoToStopped            uint8 = 0x2
+	GoToPreOperation       uint8 = 0x80
+	GoToResetNode          uint8 = 0x81
+	GoToResetCommunication uint8 = 0x82
 )
 
-// NMTState is the type of a NMT state.
-type NMTState byte
-
 const (
-	BootUp         NMTState = 0x0
-	Stopped        NMTState = 0x04
-	Operational    NMTState = 0x05
-	PreOperational NMTState = 0x7f
+	BootUp         uint8 = 0x0
+	Stopped        uint8 = 0x04
+	Operational    uint8 = 0x05
+	PreOperational uint8 = 0x7f
 )

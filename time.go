@@ -21,8 +21,8 @@ var RefDate = time.Date(
 
 // Timestamp returns the time encoded in the frame.
 func (frm Frame) Timestamp() (*time.Time, error) {
-	if fc := frm.FunctionCode(); fc != Timestamp {
-		return nil, fmt.Errorf("Invalid function code % X", fc)
+	if t := frm.MessageType(); t != MessageTypeTimestamp {
+		return nil, fmt.Errorf("Invalid message type % X", t)
 	}
 
 	if n := len(frm.Data); n != 8 {

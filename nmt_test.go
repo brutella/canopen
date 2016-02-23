@@ -21,7 +21,7 @@ func TestHeartbeatFrame(t *testing.T) {
 func TestHeartbeat(t *testing.T) {
 	frm := NewHeartbeatFrame(0x1, Operational)
 
-	if is, want := frm.FunctionCode(), Heartbeat; is != want {
+	if is, want := frm.MessageType(), MessageTypeHeartbeat; is != want {
 		t.Fatalf("is=%X, want=%X", is, want)
 	}
 }

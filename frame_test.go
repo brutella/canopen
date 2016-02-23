@@ -36,7 +36,7 @@ func TestUnmarshal(t *testing.T) {
 		t.Fatalf("is=%X, want=%X", is, want)
 	}
 
-	if is, want := frm.FunctionCode(), Heartbeat; is != want {
+	if is, want := frm.MessageType(), MessageTypeHeartbeat; is != want {
 		t.Fatalf("is=%X, want=%X", is, want)
 	}
 }

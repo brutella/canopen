@@ -8,12 +8,12 @@ import (
 // A Frame represents a CANopen frame.
 type Frame struct {
 	// CobID is the 11-bit communication object identifier – CANopen only uses 11-bit identifiers.
-	// Bits 0-6 represent the 7-bit node ID. Bits 7-11 represent the 4-bit function code.
+	// Bits 0-6 represent the 7-bit node ID. Bits 7-11 represent the 4-bit message type.
 	CobID uint16
-    // Rtr represents the Remote Transmit Request flag.
-	Rtr   bool
-    // Data contains 8 bytes
-	Data  []uint8 
+	// Rtr represents the Remote Transmit Request flag.
+	Rtr bool
+	// Data contains 8 bytes
+	Data []uint8
 }
 
 // CANopenFrame returns a CANopen frame from a CAN frame.
@@ -30,51 +30,34 @@ func CANopenFrame(frm can.Frame) Frame {
 // NewFrame returns a frame with an id and data bytes.
 func NewFrame(id uint16, data []uint8) Frame {
 	return Frame{
-		CobID: id & CobMaskID, // only use first 11 bits
+		CobID: id & MaskCobID, // only use first 11 bits
 		Data:  data,
 	}
 }
 
 func (frm Frame) String() string {
-	/*
-		IDNmtService uint16 = 0x000
-		IDSync       uint16 = 0x080
-		IDEmergency  uint16 = 0x080
-		Timestamp  uint16 = 0x100
-		IDTpdo1      uint16 = 0x180
-		IDRpdo1      uint16 = 0x200
-		IDTpdo2      uint16 = 0x280
-		IDRpdo2      uint16 = 0x300
-		IDTpdo3      uint16 = 0x380
-		IDRpdo4      uint16 = 0x400
-		IDTpdo5      uint16 = 0x480
-		IDRpdo5      uint16 = 0x500
-		IDTsdo       uint16 = 0x580
-		IDRsdo       uint16 = 0x600
-		IDHeartbeat  uint16 = 0x700
-	*/
-	fnc := frm.FunctionCode()
-	nid := frm.NodeID()
-	switch fnc {
-	case Timestamp:
-		if t, _ := frm.Timestamp(); t != nil {
-			return fmt.Sprintf("Timestamp: timestamp %s", t.String())
+	t := frm.MessageType()
+	id := frm.NodeID()
+	switch t {
+	case MessageTypeTimestamp:
+		if time, _ := frm.Timestamp(); time != nil {
+			return fmt.Sprintf("Timestamp: timestamp %s", time.String())
 		}
-	case Heartbeat:
-		return fmt.Sprintf("Heartbeat: node #%d", nid)
+	case MessageTypeHeartbeat:
+		return fmt.Sprintf("Heartbeat: node #%d", id)
 	}
 
-	return fmt.Sprintf("Function code %X, node id %d, data: % X", fnc, nid, frm.Data)
+	return fmt.Sprintf("Message type %X, node id %d, data: % X", t, id, frm.Data)
 }
 
-// FunctionCode returns the function code of the frame.
-func (frm Frame) FunctionCode() FunctionCode {
-	return FunctionCode(frm.CobID & FunctionCodeMask)
+// MessageType returns the message type.
+func (frm Frame) MessageType() uint16 {
+	return frm.CobID & MaskMessageType
 }
 
-// NodeID returns the node id of the frame.
-func (frm Frame) NodeID() NodeID {
-	return NodeID(frm.CobID & NodeMaskID)
+// NodeID returns the node id.
+func (frm Frame) NodeID() uint8 {
+	return uint8(frm.CobID & MaskNodeID)
 }
 
 // CANFrame returns a CAN frame representing the CANopen frame.

@@ -20,7 +20,7 @@ func TestTime(t *testing.T) {
 
 	Unmarshal(b, &frm)
 
-	if is, want := frm.FunctionCode(), Timestamp; is != want {
+	if is, want := frm.MessageType(), MessageTypeTimestamp; is != want {
 		t.Fatalf("is=%X, want=%X", is, want)
 	}
 

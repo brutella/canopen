@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// A Client handles message communication by sending a request 
+// A Client handles message communication by sending a request
 // and waiting for the response.
 type Client struct {
 	Bus     *can.Bus
