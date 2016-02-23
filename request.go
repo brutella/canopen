@@ -9,6 +9,8 @@ type Request struct {
 	ResponseID uint32
 }
 
+// NewRequest returns a request containing the frame to be sent 
+// and the expected response frame id.
 func NewRequest(frm Frame, respID uint32) *Request {
 	return &Request{
 		Frame:      frm,

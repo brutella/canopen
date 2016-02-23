@@ -1,5 +1,6 @@
 package canopen
 
+// NMTCommand is the type of a NMT command.
 type NMTCommand byte
 
 const (
@@ -10,6 +11,7 @@ const (
 	GoToResetCommunication NMTCommand = 0x82
 )
 
+// NMTState is the type of a NMT state.
 type NMTState byte
 
 const (
@@ -18,10 +20,3 @@ const (
 	Operational    NMTState = 0x05
 	PreOperational NMTState = 0x7f
 )
-
-func NewHeartbeatFrame(id NodeID, state NMTState) Frame {
-	return Frame{
-		CobID: uint16(Heartbeat) + uint16(id),
-		Data:  []byte{byte(state)},
-	}
-}

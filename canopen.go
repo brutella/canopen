@@ -1,14 +1,5 @@
 package canopen
 
-// Reference
-//
-// CANopenNode
-// https://github.com/CANopenNode
-//
-// CANopen Dokumentation
-// http://www.a-m-c.com/download/sw/dw300_3-0-3/CAN_Manual300_3-0-3.pdf
-// https://en.wikipedia.org/wiki/CANopen
-
 // NodeID is the type of a CANopen frame id.
 type NodeID uint8
 
@@ -20,16 +11,16 @@ const (
 	Sync       FunctionCode = 0x080
 	Emergency  FunctionCode = 0x080
 	Timestamp  FunctionCode = 0x100
-	TPDO1      FunctionCode = 0x180
-	RPDO1      FunctionCode = 0x200
-	TPDO2      FunctionCode = 0x280
-	RPDO2      FunctionCode = 0x300
-	TPDO3      FunctionCode = 0x380
-	RPDO3      FunctionCode = 0x400
-	TPDO4      FunctionCode = 0x480
-	RPDO4      FunctionCode = 0x500
-	TSDO       FunctionCode = 0x580
-	RSDO       FunctionCode = 0x600
+    TPDO1      FunctionCode = 0x180
+    RPDO1      FunctionCode = 0x200
+    TPDO2      FunctionCode = 0x280
+    RPDO2      FunctionCode = 0x300
+    TPDO3      FunctionCode = 0x380
+    RPDO3      FunctionCode = 0x400
+    TPDO4      FunctionCode = 0x480
+    RPDO4      FunctionCode = 0x500
+    TSDO       FunctionCode = 0x580
+    RSDO       FunctionCode = 0x600
 	Heartbeat  FunctionCode = 0x700
 )
 

@@ -19,6 +19,7 @@ var RefDate = time.Date(
 	time.UTC, // location
 )
 
+// Timestamp returns the time encoded in the frame.
 func (frm Frame) Timestamp() (*time.Time, error) {
 	if fc := frm.FunctionCode(); fc != Timestamp {
 		return nil, fmt.Errorf("Invalid function code % X", fc)

@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+// Produce repeatedly sends a frame on a bus after a timeout.
+// The sending can be stopped by using the returned channel.
 func Produce(frame Frame, bus *can.Bus, timeout time.Duration) chan<- struct{} {
 	stop := make(chan struct{})
 	canFrame := frame.CANFrame()
@@ -25,6 +27,7 @@ func Produce(frame Frame, bus *can.Bus, timeout time.Duration) chan<- struct{} {
 	return stop
 }
 
+// ProduceHeartbeat repeatedly sends a CANopen heartbeat frame.
 func ProduceHeartbeat(id NodeID, state NMTState, bus *can.Bus, timeout time.Duration) chan<- struct{} {
 	frame := NewHeartbeatFrame(id, state)
 	return Produce(frame, bus, timeout)

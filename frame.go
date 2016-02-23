@@ -5,23 +5,23 @@ import (
 	"github.com/brutella/can"
 )
 
-// Frame represents a CANopen frame, which are CAN frames under hood.
+// A Frame represents a CANopen frame.
 type Frame struct {
-	// 11-bit communication object identifier (COB-ID)
-	// bit 0-6: 7-bit node id
-	// bit 7-11: 4-bit function code
+	// CobID is the 11-bit communication object identifier – CANopen only uses 11-bit identifiers.
+	// Bits 0-6 represent the 7-bit node ID. Bits 7-11 represent the 4-bit function code.
 	CobID uint16
+    // Rtr represents the Remote Transmit Request flag.
 	Rtr   bool
-	Data  []uint8
+    // Data contains 8 bytes
+	Data  []uint8 
 }
 
 // CANopenFrame returns a CANopen frame from a CAN frame.
 func CANopenFrame(frm can.Frame) Frame {
 	canopenFrame := Frame{}
 
-	// CANopen only uses 11-bit identifier
-	canopenFrame.CobID = uint16(frm.ID & can.MaskID)
-	canopenFrame.Rtr = (frm.ID & can.FlagRtr) == can.FlagRtr
+	canopenFrame.CobID = uint16(frm.ID & can.MaskIDSff)
+	canopenFrame.Rtr = (frm.ID & can.MaskRtr) == can.MaskRtr
 	canopenFrame.Data = frm.Data[:]
 
 	return canopenFrame
@@ -86,7 +86,7 @@ func (frm Frame) CANFrame() can.Frame {
 	// Convert CANOpen COB-ID to CAN id including RTR flag
 	id := uint32(frm.CobID)
 	if frm.Rtr == true {
-		id = id | can.FlagRtr
+		id = id | can.MaskRtr
 	}
 
 	return can.Frame{

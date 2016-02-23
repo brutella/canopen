@@ -1,5 +1,5 @@
 package sdo
-    
+
 var CommandSpecifierMask byte = 0xE0
 
 const (

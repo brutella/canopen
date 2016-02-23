@@ -1,10 +1,10 @@
 package canopen
 
-// Response represents the response from a request.
+// A Response represents the response from a request.
 type Response struct {
-	// The Frame of the response
+	// The frame of the response
 	Frame Frame
 
-	// The Request that was sent to obtain this Response
+	// The Request which triggers the response.
 	Request *Request
 }
