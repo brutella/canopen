@@ -31,10 +31,10 @@ frame := canopen.NewFrame(canopen.MessageTypeRSDO, payload)
 // Expected id of response frame
 respID := canopen.MessageTypeTSDO
 
-req := NewRequest(frame, respID)
+req := canopen.NewRequest(frame, respID)
 
 // Create client which sends request and waits for response
-client := &Client{bus, time.Second * 1}
+client := &canopen.Client{bus, time.Second * 1}
 resp, _ := client.Do(req)
 ```
 
