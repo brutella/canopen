@@ -1,7 +1,6 @@
 package canopen
 
 import (
-	"fmt"
 	"github.com/brutella/can"
 )
 
@@ -35,21 +34,6 @@ func NewFrame(id uint16, data []uint8) Frame {
 	}
 }
 
-func (frm Frame) String() string {
-	t := frm.MessageType()
-	id := frm.NodeID()
-	switch t {
-	case MessageTypeTimestamp:
-		if time, _ := frm.Timestamp(); time != nil {
-			return fmt.Sprintf("Timestamp: timestamp %s", time.String())
-		}
-	case MessageTypeHeartbeat:
-		return fmt.Sprintf("Heartbeat: node #%d", id)
-	}
-
-	return fmt.Sprintf("Message type %X, node id %d, data: % X", t, id, frm.Data)
-}
-
 // MessageType returns the message type.
 func (frm Frame) MessageType() uint16 {
 	return frm.CobID & MaskMessageType
@@ -61,12 +45,20 @@ func (frm Frame) NodeID() uint8 {
 }
 
 // CANFrame returns a CAN frame representing the CANopen frame.
+//
+// CANopen frames are encoded as follows:
+//
+//              -------------------------------------------------------
+//     CAN     | ID           | Length    | Flags | Res0 | Res1 | Data |
+//              -------------------------------------------------------
+//     CANopen | COB-ID + Rtr | len(Data) |       |      |      | Data |
+//              -------------------------------------------------------
 func (frm Frame) CANFrame() can.Frame {
 	var data [8]uint8
 	n := len(frm.Data)
 	copy(data[:n], frm.Data[:n])
 
-	// Convert CANOpen COB-ID to CAN id including RTR flag
+	// Convert CANopen COB-ID to CAN id including RTR flag
 	id := uint32(frm.CobID)
 	if frm.Rtr == true {
 		id = id | can.MaskRtr

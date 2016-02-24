@@ -51,7 +51,7 @@ func (download Download) Do(bus *can.Bus) error {
 	}
 
 	bytes := []byte{
-		byte(ClientIntiateDownload | e | s | ((int(n) << 2) & TransferSizeMask)),
+		byte(ClientIntiateDownload | e | s | ((int(n) << 2) & TransferMaskSize)),
 		download.ObjectIndex.Index.B0, download.ObjectIndex.Index.B1,
 		download.ObjectIndex.SubIndex,
 	}
@@ -70,7 +70,7 @@ func (download Download) Do(bus *can.Bus) error {
 
 	frame = resp.Frame
 	b0 := frame.Data[0] // == 0100 nnes
-	scs := b0 & CommandSpecifierMask
+	scs := b0 & TransferMaskCommandSpecifier
 	switch scs {
 	case ServerInitiateDownload:
 		break
@@ -111,7 +111,7 @@ func (download Download) Do(bus *can.Bus) error {
 
 			// Segment response
 			frame := resp.Frame
-			if scs := frame.Data[0] & CommandSpecifierMask; scs != ServerSegmentDownload {
+			if scs := frame.Data[0] & TransferMaskCommandSpecifier; scs != ServerSegmentDownload {
 				return fmt.Errorf("Invalid scs %X != %X\n", scs, ServerSegmentDownload)
 			}
 		}

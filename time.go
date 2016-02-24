@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// RefDate is the reference date for CAN timestamp messages
+// RefDate is the reference date of CAN timestamp messages.
 var RefDate = time.Date(
 	1984,     // year
 	1,        // month

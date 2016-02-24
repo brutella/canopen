@@ -48,7 +48,7 @@ func (upload Upload) Do(bus *can.Bus) ([]byte, error) {
 
 	frame = resp.Frame
 	b0 := frame.Data[0] // == 0100 nnes
-	scs := b0 & CommandSpecifierMask
+	scs := b0 & TransferMaskCommandSpecifier
 	switch scs {
 	case ServerInitiateUpload:
 		break
@@ -126,5 +126,5 @@ func isLast(frame canopen.Frame) bool {
 }
 
 func sizeValue(frame canopen.Frame) int {
-	return int(frame.Data[0] & TransferSizeMask >> 2)
+	return int(frame.Data[0] & TransferMaskSize >> 2)
 }

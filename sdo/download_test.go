@@ -22,7 +22,7 @@ func (rw *downloadReadWriteCloser) Write(b []byte) (n int, err error) {
 		return 0, err
 	}
 
-	switch frm.Data[0] & CommandSpecifierMask {
+	switch frm.Data[0] & TransferMaskCommandSpecifier {
 	case ClientIntiateDownload:
 		frm = downloadInitiateFrame
 	case ClientSegmentDownload:
