@@ -65,7 +65,8 @@ func (download Download) Do(bus *can.Bus) error {
 	req := canopen.NewRequest(frame, uint32(download.ResponseCobID))
 	resp, err := c.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return err
 	}
 
 	frame = resp.Frame

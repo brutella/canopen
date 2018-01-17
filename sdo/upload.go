@@ -43,7 +43,8 @@ func (upload Upload) Do(bus *can.Bus) ([]byte, error) {
 	req := canopen.NewRequest(frame, uint32(upload.ResponseCobID))
 	resp, err := c.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return nil, err
 	}
 
 	frame = resp.Frame
