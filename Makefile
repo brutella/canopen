@@ -13,6 +13,10 @@ unexport GOPATH
 test:
 	$(GOTEST) -v ./...
 
+clean:
+	$(GOCLEAN)
+	rm -rf $(GOBUILD)
+
 package: build
 	tar -cvzf $(PACKAGE_RPI).tar.gz -C $(BUILD_DIR) $(PACKAGE_RPI)
 
