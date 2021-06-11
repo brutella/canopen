@@ -1,7 +1,7 @@
 package canopen
 
 import (
-	"github.com/brutella/can"
+	"github.com/FabianPetersen/can"
 )
 
 // A Frame represents a CANopen frame.

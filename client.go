@@ -3,7 +3,7 @@ package canopen
 import (
 	"time"
 
-	"github.com/brutella/can"
+	"github.com/FabianPetersen/can"
 )
 
 // A Client handles message communication by sending a request

@@ -4,8 +4,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/brutella/can"
-	"github.com/brutella/canopen"
+	"github.com/FabianPetersen/can"
+	"github.com/FabianPetersen/canopen"
 	"log"
 	"os"
 	"os/signal"

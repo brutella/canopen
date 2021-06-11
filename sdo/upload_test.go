@@ -2,8 +2,8 @@ package sdo
 
 import (
 	"bytes"
-	"github.com/brutella/can"
-	"github.com/brutella/canopen"
+	"github.com/FabianPetersen/can"
+	"github.com/FabianPetersen/canopen"
 	"reflect"
 	"testing"
 )

@@ -1,7 +1,7 @@
 package canopen
 
 import (
-	"github.com/brutella/can"
+	"github.com/FabianPetersen/can"
 	"testing"
 	"time"
 )
