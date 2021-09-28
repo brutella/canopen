@@ -56,6 +56,11 @@ func (download Download) Do(bus *can.Bus) error {
 		download.ObjectIndex.SubIndex,
 	}
 
+	// CiA301 Standard expects all (8) bytes to be sent
+	for len(data) < 4 {
+		data = append(data, 0x0)
+	}
+
 	// Initiate
 	frame := canopen.Frame{
 		CobID: download.RequestCobID,
