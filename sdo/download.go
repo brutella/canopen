@@ -103,6 +103,11 @@ func (download Download) Do(bus *can.Bus) error {
 				cmd |= 0x1
 			}
 
+			// CiA301 Standard expects all (8) bytes to be sent
+			for len(junk) < 7 {
+				data = append(junk, 0x0)
+			}
+
 			frame = canopen.Frame{
 				CobID: download.RequestCobID,
 				Data:  append([]byte{cmd}, junk[:]...),
