@@ -50,8 +50,9 @@ func (download Download) Do(bus *can.Bus) error {
 		n = byte(size)
 	}
 
+	// If valid "n" indicates the number of bytes in d that do not contain data. Hence 4 -
 	bytes := []byte{
-		byte(ClientIntiateDownload | e | s | ((int(n) << 2) & TransferMaskSize)),
+		byte(ClientIntiateDownload | e | s | ((4 - (int(n) << 2)) & TransferMaskSize)),
 		download.ObjectIndex.Index.B0, download.ObjectIndex.Index.B1,
 		download.ObjectIndex.SubIndex,
 	}
