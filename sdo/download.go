@@ -1,22 +1,22 @@
 package sdo
 
 import (
+	"github.com/brutella/can"
+	"github.com/brutella/canopen"
+
 	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/brutella/can"
-	"github.com/brutella/canopen"
-	"log"
 	"time"
 )
 
 const (
-	ClientIntiateDownload = 0x20 // 0010 0000
-	ClientSegmentDownload = 0x00 // 0110 0000
+	DownloadInitiateRequest  = 0x20 // 0010 0000
+	DownloadInitiateResponse = 0x60 // 0110 0000
 
-	ServerInitiateDownload = 0x60 // 0110 0000
-	ServerSegmentDownload  = 0x20 // 0010 0000
+	DownloadSegmentRequest  = 0x00 // 0000 0000
+	DownloadSegmentResponse = 0x20 // 0010 0000
 )
 
 // Download represents a SDO download process to write data to a CANopen
@@ -30,94 +30,141 @@ type Download struct {
 }
 
 func (download Download) Do(bus *can.Bus) error {
-	c := &canopen.Client{bus, time.Second * 2}
-	data := download.Data
-
-	e := TransferExpedited
-	s := TransferSizeIndicated
-	n := byte(0)
-	if size := int32(len(data)); size > 4 {
-		e = 0
-		n = 0
-
-		var buf bytes.Buffer
-		if err := binary.Write(&buf, binary.LittleEndian, size); err != nil {
-			return err
-		} else {
-			data = buf.Bytes()
-		}
-	} else {
-		n = byte(size)
+	if err := download.doInit(bus); err != nil {
+		return err
 	}
 
-	bytes := []byte{
-		byte(ClientIntiateDownload | e | s | ((int(n) << 2) & TransferMaskSize)),
-		download.ObjectIndex.Index.B0, download.ObjectIndex.Index.B1,
-		download.ObjectIndex.SubIndex,
-	}
+	return download.doSegments(bus)
+}
 
-	// Initiate
-	frame := canopen.Frame{
-		CobID: download.RequestCobID,
-		Data:  append(bytes[:], data[:]...),
+func (download Download) doInit(bus *can.Bus) error {
+	frame, err := download.initFrame()
+	if err != nil {
+		return err
 	}
 
 	req := canopen.NewRequest(frame, uint32(download.ResponseCobID))
+	c := &canopen.Client{bus, time.Second * 2}
 	resp, err := c.Do(req)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 
 	frame = resp.Frame
-	b0 := frame.Data[0] // == 0100 nnes
-	scs := b0 & TransferMaskCommandSpecifier
-	switch scs {
-	case ServerInitiateDownload:
-		break
-	case TransferAbort:
-		return errors.New("Server aborted download")
+	switch scs := frame.Data[0] >> 5; scs {
+	case 3: // response
+		return nil
+	case 4: // abort
+		return errors.New("server aborted download initialization")
 	default:
-		log.Fatalf("Unexpected server command specifier %X", scs)
+		return fmt.Errorf("unexpected server command specifier %X (expected %X)", scs, 3)
 	}
+}
 
-	if e == 0 {
-		junks := splitN(download.Data, 7)
-		t := 0
-		for i, junk := range junks {
-			cmd := byte(ClientSegmentDownload)
+// initFrame returns the initial frame of the download.
+// If the download data is less than 4 bytes, the init frame data contains all download data.
+// If the download data is more than 4 bytes, the init frame data contains the overall length of the download data.
+func (download Download) initFrame() (frame canopen.Frame, err error) {
+	fdata := make([]byte, 8)
 
-			if t%2 == 1 {
-				cmd |= TransferSegmentToggle
-			}
+	// css = 1 (download init request)
+	fdata[0] = setBit(fdata[0], 5)
+	fdata[1] = download.ObjectIndex.Index.B0
+	fdata[2] = download.ObjectIndex.Index.B1
+	fdata[3] = download.ObjectIndex.SubIndex
 
-			t += 1
+	n := uint8(len(download.Data) & 0x3)
+	if n <= 4 { // does download data fit into one frame?
+		// e = 1 (expedited)
+		fdata[0] = setBit(fdata[0], 1)
+		// s = 1
+		fdata[0] = setBit(fdata[0], 0)
+		// n = number of unused bytes in frame.Data
+		fdata[0] |= (4 - n) << 2
+		// copy all download data into frame data
+		copy(fdata[3:], download.Data)
+	} else {
+		// e = 0
+		// n = 0 (frame.Data contains the overall )
+		// s = 1
+		fdata[0] = setBit(fdata[0], 0)
 
-			// is last segmented
-			if i == len(junks)-1 {
-				cmd |= 0x1
-			}
-
-			frame = canopen.Frame{
-				CobID: download.RequestCobID,
-				Data:  append([]byte{cmd}, junk[:]...),
-			}
-
-			req = canopen.NewRequest(frame, uint32(download.ResponseCobID))
-			resp, err = c.Do(req)
-
-			if err != nil {
-				return err
-			}
-
-			// Segment response
-			frame := resp.Frame
-			if scs := frame.Data[0] & TransferMaskCommandSpecifier; scs != ServerSegmentDownload {
-				return fmt.Errorf("Invalid scs %X != %X\n", scs, ServerSegmentDownload)
-			}
+		var buf bytes.Buffer
+		if err = binary.Write(&buf, binary.LittleEndian, uint32(n)); err != nil {
+			return
 		}
 
+		// copy overall length of download data into frame data
+		copy(fdata[:4], buf.Bytes())
+	}
+
+	frame.CobID = download.RequestCobID
+	frame.Data = fdata
+
+	return
+}
+
+func (download Download) doSegments(bus *can.Bus) error {
+	frames := download.segmentFrames()
+
+	c := &canopen.Client{bus, time.Second * 2}
+	for _, frame := range frames {
+		req := canopen.NewRequest(frame, uint32(download.ResponseCobID))
+		resp, err := c.Do(req)
+		if err != nil {
+			return err
+		}
+
+		switch scs := resp.Frame.Data[0] >> 5; scs {
+		case 1:
+			break
+		case 4:
+			return errors.New("server aborted download")
+		default:
+			return fmt.Errorf("unexpected server command specifier %X (expected %X)", scs, 1)
+		}
+
+		// check toggle bit
+		if hasBit(frame.Data[0], 4) != hasBit(resp.Frame.Data[0], 4) {
+			return fmt.Errorf("unexpected toggle bit %t", hasBit(resp.Frame.Data[0], 4))
+		}
 	}
 
 	return nil
+}
+
+func (download Download) segmentFrames() (frames []canopen.Frame) {
+	if len(download.Data) <= 4 {
+		return
+	}
+
+	junks := splitN(download.Data, 7)
+	for i, junk := range junks {
+		fdata := make([]byte, 8)
+
+		if len(junk) < 7 {
+			fdata[0] |= uint8(7-len(junk)) << 1
+		}
+
+		if i%2 == 1 {
+			// toggle bit 5
+			fdata[0] = setBit(fdata[0], 4)
+		}
+
+		if i == len(junks)-1 {
+			// c = 1 (no more segments to download)
+			fdata[0] = setBit(fdata[0], 0)
+		}
+
+		copy(fdata[1:], junk)
+
+		frame := canopen.Frame{
+			CobID: download.RequestCobID,
+			Data:  fdata,
+		}
+
+		frames = append(frames, frame)
+	}
+
+	return
 }
