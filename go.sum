@@ -1,8 +1,6 @@
 github.com/FabianPetersen/can v0.0.3 h1:AvNdtYRx/Qqd9ecVmPPk4/U27GT5kyvurtriWyASoMU=
 github.com/FabianPetersen/can v0.0.3/go.mod h1:K+0T7NSTiAhcH/zIYFPj4o256RKIwQ1Y/uHTC9MyK4I=
-github.com/brutella/can v0.0.1 h1:Rz+2Zuje3NT79daon8wPN9+VphH3/kl1DP8Dhf/k1NI=
-github.com/brutella/can v0.0.1/go.mod h1:NYDxbQito3w4+4DcjWs/fpQ3xyaFdpXw/KYqtZFU98k=
-golang.org/x/sys v0.0.0-20181213200352-4d1cda033e06 h1:0oC8rFnE+74kEmuHZ46F6KHsMr5Gx2gUQPuNz28iQZM=
-golang.org/x/sys v0.0.0-20181213200352-4d1cda033e06/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
+github.com/jpillora/maplock v0.0.0-20160420012925-5c725ac6e22a h1:40K0UjFKjfaXcJaGMgf9C0fOzwDxPZMOI0CPbNP89cQ=
+github.com/jpillora/maplock v0.0.0-20160420012925-5c725ac6e22a/go.mod h1:bn3xq9G+QDq2j6fczyaTq47L6980t7/NnqCnCK7kqD0=
 golang.org/x/sys v0.0.0-20190429190828-d89cdac9e872 h1:cGjJzUd8RgBw428LXP65YXni0aiGNA4Bl+ls8SmLOm8=
 golang.org/x/sys v0.0.0-20190429190828-d89cdac9e872/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
