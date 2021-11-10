@@ -85,8 +85,16 @@ func (download Download) initFrame() (frame canopen.Frame, err error) {
 		fdata[0] = setBit(fdata[0], 1)
 		// s = 1
 		fdata[0] = setBit(fdata[0], 0)
+
 		// n = number of unused bytes in frame.Data
-		fdata[0] |= (4 - uint8(n)) << 2
+		emptyBytes := 4 - n
+		if emptyBytes == 2 || emptyBytes == 3 {
+			fdata[0] = setBit(fdata[0], 3)
+		}
+		if emptyBytes == 1 || emptyBytes == 3 {
+			fdata[0] = setBit(fdata[0], 2)
+		}
+
 		// copy all download data into frame data
 		copy(fdata[3:], download.Data)
 	} else {
