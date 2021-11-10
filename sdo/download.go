@@ -96,7 +96,7 @@ func (download Download) initFrame() (frame canopen.Frame, err error) {
 		}
 
 		// copy all download data into frame data
-		copy(fdata[3:], download.Data)
+		copy(fdata[4:], download.Data)
 	} else {
 		// e = 0
 		// n = 0 (frame.Data contains the overall )
@@ -109,7 +109,7 @@ func (download Download) initFrame() (frame canopen.Frame, err error) {
 		}
 
 		// copy overall length of download data into frame data
-		copy(fdata[3:], buf.Bytes())
+		copy(fdata[4:], buf.Bytes())
 	}
 
 	frame.CobID = download.RequestCobID
