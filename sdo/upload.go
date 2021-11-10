@@ -1,21 +1,24 @@
 package sdo
 
 import (
+	"github.com/FabianPetersen/can"
+	"github.com/FabianPetersen/canopen"
+	"strconv"
+
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"github.com/FabianPetersen/can"
-	"github.com/FabianPetersen/canopen"
+	"fmt"
 	"log"
 	"time"
 )
 
 const (
-	ClientIntiateUpload = 0x40 // 0100 0000
-	ClientSegmentUpload = 0x60 // 0110 0000
+	UploadInitiateRequest  = 0x40 // 0100 0000
+	UploadInitiateResponse = 0x40 // 0100 0000
 
-	ServerInitiateUpload = 0x40 // 0100 0000
-	ServerSegmentUpload  = 0x00 // 0000 0000
+	UploadSegmentRequest  = 0x60 // 0110 0000
+	UploadSegmentResponse = 0x00 // 0000 0000
 )
 
 // Upload represents a SDO upload process to read data from a CANopen
@@ -28,12 +31,17 @@ type Upload struct {
 }
 
 func (upload Upload) Do(bus *can.Bus) ([]byte, error) {
+	// Do not allow multiple messages for the same device
+	key := strconv.Itoa(int(upload.RequestCobID))
+	canopen.Lock.Lock(key)
+	defer canopen.Lock.Unlock(key)
+
 	c := &canopen.Client{bus, time.Second * 2}
 	// Initiate
 	frame := canopen.Frame{
 		CobID: upload.RequestCobID,
 		Data: []byte{
-			byte(ClientIntiateUpload),
+			byte(UploadInitiateRequest),
 			upload.ObjectIndex.Index.B0, upload.ObjectIndex.Index.B1,
 			upload.ObjectIndex.SubIndex,
 			0x0, 0x0, 0x0, 0x0,
@@ -48,22 +56,20 @@ func (upload Upload) Do(bus *can.Bus) ([]byte, error) {
 	}
 
 	frame = resp.Frame
-	b0 := frame.Data[0] // == 0100 nnes
-	scs := b0 & TransferMaskCommandSpecifier
-	switch scs {
-	case ServerInitiateUpload:
+	switch scs := frame.Data[0] >> 5; scs {
+	case 2:
 		break
 	case TransferAbort:
 		return nil, errors.New("Server aborted upload")
 	default:
-		log.Fatalf("Unexpected server command specifier %X", scs)
+		return nil, fmt.Errorf("unexpected server command specifier %X", scs)
 	}
 
-	if isExpedited(frame) {
+	if hasBit(frame.Data[0], 1) { // e = 1?
 		// number of segment bytes with no data
-		n := 0
-		if isSizeIndicated(frame) {
-			n = sizeValue(frame)
+		var n uint8
+		if hasBit(frame.Data[0], 0) { // s = 1?
+			n = (frame.Data[0] >> 2) & 0x3
 		}
 		return frame.Data[4 : 8-n], nil
 	}
@@ -75,57 +81,43 @@ func (upload Upload) Do(bus *can.Bus) ([]byte, error) {
 		return nil, err
 	}
 
+	var i int
 	var buf bytes.Buffer
-	t := 0
 	for {
-		// Upload segment
-		cmd := byte(ClientSegmentUpload)
-		if t%2 == 1 {
-			cmd |= TransferSegmentToggle
+		data := make([]byte, 8)
+
+		// ccs = 3
+		data[0] |= 3 << 5
+
+		if i%2 == 1 {
+			// t = 1
+			data[0] = setBit(data[0], 4)
 		}
 
-		t += 1
+		i += 1
 
 		frame = canopen.Frame{
 			CobID: upload.RequestCobID,
-			Data: []byte{
-				cmd,
-				0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-			},
+			Data:  data,
 		}
 
 		req = canopen.NewRequest(frame, uint32(upload.ResponseCobID))
 		resp, err = c.Do(req)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 
-		// Segment response
-		frame := resp.Frame
-		b0 = frame.Data[0]
+		if hasBit(frame.Data[0], 4) != hasBit(resp.Frame.Data[0], 4) {
+			return nil, fmt.Errorf("unexpected toggle bit %t", hasBit(resp.Frame.Data[0], 4))
+		}
 
-		n := int((b0 & 0xE) >> 1)
+		n := (resp.Frame.Data[0] >> 1) & 0x7
 		buf.Write(resp.Frame.Data[1 : 8-n])
-		if isLast(frame) {
+
+		if hasBit(resp.Frame.Data[0], 0) { // c = 1?
 			break
 		}
 	}
 
 	return buf.Bytes(), nil
-}
-
-func isExpedited(frame canopen.Frame) bool {
-	return frame.Data[0]&TransferExpedited == TransferExpedited
-}
-
-func isSizeIndicated(frame canopen.Frame) bool {
-	return frame.Data[0]&TransferSizeIndicated == TransferSizeIndicated
-}
-
-func isLast(frame canopen.Frame) bool {
-	return frame.Data[0]&0x1 == 0x1
-}
-
-func sizeValue(frame canopen.Frame) int {
-	return int(frame.Data[0] & TransferMaskSize >> 2)
 }

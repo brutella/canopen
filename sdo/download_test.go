@@ -22,10 +22,10 @@ func (rw *downloadReadWriteCloser) Write(b []byte) (n int, err error) {
 		return 0, err
 	}
 
-	switch frm.Data[0] & TransferMaskCommandSpecifier {
-	case ClientIntiateDownload:
+	switch frm.Data[0] >> 5 {
+	case 1: // initiate
 		frm = downloadInitiateFrame
-	case ClientSegmentDownload:
+	case 0: // segment
 		frm = downloadSegmentFrame
 	default:
 		log.Fatal("Unknown command")
@@ -49,7 +49,7 @@ var downloadInitiateFrame = can.Frame{
 	Res0:   0x0,
 	Res1:   0x0,
 	Data: [can.MaxFrameDataLength]uint8{
-		ServerInitiateDownload,
+		3 << 5,
 		0xBB, 0xAA,
 		0xCC,
 		0x0, 0x0, 0x0, 0x0},
@@ -62,7 +62,7 @@ var downloadSegmentFrame = can.Frame{
 	Res0:   0x0,
 	Res1:   0x0,
 	Data: [can.MaxFrameDataLength]uint8{
-		ServerSegmentDownload,
+		1 << 5, /* scs */
 		0xBB, 0xAA,
 		0xCC,
 		0x0, 0x0, 0x0, 0x0},
