@@ -79,14 +79,14 @@ func (download Download) initFrame() (frame canopen.Frame, err error) {
 	fdata[2] = download.ObjectIndex.Index.B1
 	fdata[3] = download.ObjectIndex.SubIndex
 
-	n := uint8(len(download.Data) & 0x3)
+	n := len(download.Data)
 	if n <= 4 { // does download data fit into one frame?
 		// e = 1 (expedited)
 		fdata[0] = setBit(fdata[0], 1)
 		// s = 1
 		fdata[0] = setBit(fdata[0], 0)
 		// n = number of unused bytes in frame.Data
-		fdata[0] |= (4 - n) << 2
+		fdata[0] |= (4 - uint8(n)) << 2
 		// copy all download data into frame data
 		copy(fdata[3:], download.Data)
 	} else {
@@ -101,7 +101,7 @@ func (download Download) initFrame() (frame canopen.Frame, err error) {
 		}
 
 		// copy overall length of download data into frame data
-		copy(fdata[:4], buf.Bytes())
+		copy(fdata[3:], buf.Bytes())
 	}
 
 	frame.CobID = download.RequestCobID
