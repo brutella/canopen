@@ -159,7 +159,7 @@ func (download Download) segmentFrames() (frames []canopen.Frame) {
 
 	junks := splitN(download.Data, 7)
 	for i, junk := range junks {
-		fdata := make([]byte, 8)
+		fdata := make([]byte, 1)
 
 		if len(junk) < 7 {
 			fdata[0] |= uint8(7-len(junk)) << 1
@@ -175,7 +175,12 @@ func (download Download) segmentFrames() (frames []canopen.Frame) {
 			fdata[0] = setBit(fdata[0], 0)
 		}
 
-		copy(fdata[1:], junk)
+		fdata = append(fdata, junk...)
+
+		// CiA301 Standard expects all (8) bytes to be sent
+		for len(fdata) < 8 {
+			fdata = append(fdata, 0x0)
+		}
 
 		frame := canopen.Frame{
 			CobID: download.RequestCobID,
