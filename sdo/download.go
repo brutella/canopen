@@ -71,7 +71,7 @@ func (download Download) doInit(bus *can.Bus) error {
 // If the download data is less than 4 bytes, the init frame data contains all download data.
 // If the download data is more than 4 bytes, the init frame data contains the overall length of the download data.
 func (download Download) initFrame() (frame canopen.Frame, err error) {
-	fdata := make([]byte, 8)
+	fdata := make([]byte, 4)
 
 	// css = 1 (download init request)
 	fdata[0] = setBit(fdata[0], 5)
@@ -96,7 +96,7 @@ func (download Download) initFrame() (frame canopen.Frame, err error) {
 		}
 
 		// copy all download data into frame data
-		copy(fdata[4:], download.Data)
+		fdata = append(fdata, download.Data...)
 	} else {
 		// e = 0
 		// n = 0 (frame.Data contains the overall )
@@ -109,7 +109,12 @@ func (download Download) initFrame() (frame canopen.Frame, err error) {
 		}
 
 		// copy overall length of download data into frame data
-		copy(fdata[4:], buf.Bytes())
+		fdata = append(fdata, buf.Bytes()...)
+	}
+
+	// CiA301 Standard expects all (8) bytes to be sent
+	for len(fdata) < 8 {
+		fdata = append(fdata, 0x0)
 	}
 
 	frame.CobID = download.RequestCobID
