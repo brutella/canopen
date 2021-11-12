@@ -7,8 +7,6 @@ import (
 
 	"bytes"
 	"encoding/binary"
-	"errors"
-	"fmt"
 	"log"
 	"time"
 )
@@ -60,9 +58,12 @@ func (upload Upload) Do(bus *can.Bus) ([]byte, error) {
 	case 2:
 		break
 	case TransferAbort:
-		return nil, errors.New("Server aborted upload")
+		return nil, canopen.TransferAbort{}
 	default:
-		return nil, fmt.Errorf("unexpected server command specifier %X", scs)
+		return nil, canopen.UnexpectedSCSResponse{
+			Expected: 2,
+			Actual:   scs,
+		}
 	}
 
 	if hasBit(frame.Data[0], 1) { // e = 1?
@@ -108,7 +109,16 @@ func (upload Upload) Do(bus *can.Bus) ([]byte, error) {
 		}
 
 		if hasBit(frame.Data[0], 4) != hasBit(resp.Frame.Data[0], 4) {
-			return nil, fmt.Errorf("unexpected toggle bit %t", hasBit(resp.Frame.Data[0], 4))
+			return nil, canopen.UnexpectedToggleBit{
+				Expected: hasBit(frame.Data[0], 4),
+				Actual:   hasBit(resp.Frame.Data[0], 4),
+			}
+
+		} else if scs := resp.Frame.Data[0] >> 5; scs == 0 {
+			return nil, canopen.UnexpectedSCSResponse{
+				Expected: 0,
+				Actual:   scs,
+			}
 		}
 
 		n := (resp.Frame.Data[0] >> 1) & 0x7

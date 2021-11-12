@@ -1,12 +1,37 @@
 package canopen
 
 import (
+	"fmt"
 	"github.com/FabianPetersen/can"
 	"github.com/jpillora/maplock"
 	"time"
 )
 
 var Lock = maplock.New()
+
+type TransferAbort struct{}
+
+func (e TransferAbort) Error() string {
+	return "Server aborted upload"
+}
+
+type UnexpectedSCSResponse struct {
+	Expected uint8
+	Actual   uint8
+}
+
+func (e UnexpectedSCSResponse) Error() string {
+	return fmt.Sprintf("unexpected server command specifier %X (expected %X)", e.Actual, e.Expected)
+}
+
+type UnexpectedToggleBit struct {
+	Expected bool
+	Actual   bool
+}
+
+func (e UnexpectedToggleBit) Error() string {
+	return fmt.Sprintf("unexpected toggle bit %t (expected %t)", e.Actual, e.Expected)
+}
 
 // A Client handles message communication by sending a request
 // and waiting for the response.

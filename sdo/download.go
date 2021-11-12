@@ -7,8 +7,6 @@ import (
 
 	"bytes"
 	"encoding/binary"
-	"errors"
-	"fmt"
 	"time"
 )
 
@@ -61,9 +59,12 @@ func (download Download) doInit(bus *can.Bus) error {
 	case 3: // response
 		return nil
 	case 4: // abort
-		return errors.New("server aborted download initialization")
+		return canopen.TransferAbort{}
 	default:
-		return fmt.Errorf("unexpected server command specifier %X (expected %X)", scs, 3)
+		return canopen.UnexpectedSCSResponse{
+			Expected: 3,
+			Actual:   scs,
+		}
 	}
 }
 
@@ -138,14 +139,20 @@ func (download Download) doSegments(bus *can.Bus) error {
 		case 1:
 			break
 		case 4:
-			return errors.New("server aborted download")
+			return canopen.TransferAbort{}
 		default:
-			return fmt.Errorf("unexpected server command specifier %X (expected %X)", scs, 1)
+			return canopen.UnexpectedSCSResponse{
+				Expected: 1,
+				Actual:   scs,
+			}
 		}
 
 		// check toggle bit
 		if hasBit(frame.Data[0], 4) != hasBit(resp.Frame.Data[0], 4) {
-			return fmt.Errorf("unexpected toggle bit %t", hasBit(resp.Frame.Data[0], 4))
+			return canopen.UnexpectedToggleBit{
+				Expected: hasBit(frame.Data[0], 4),
+				Actual:   hasBit(resp.Frame.Data[0], 4),
+			}
 		}
 	}
 
