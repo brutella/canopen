@@ -1,12 +1,12 @@
 package sdo
 
 import (
+	"encoding/binary"
 	"github.com/FabianPetersen/can"
 	"github.com/FabianPetersen/canopen"
 	"strconv"
 
 	"bytes"
-	"encoding/binary"
 	"log"
 	"time"
 )
@@ -76,19 +76,19 @@ func (upload Upload) Do(bus *can.Bus) ([]byte, error) {
 	}
 
 	// Read segment data length
-	var n uint32
+	var total uint32
 	b := bytes.NewBuffer(frame.Data[4:8])
-	if err := binary.Read(b, binary.LittleEndian, &n); err != nil {
+	if err := binary.Read(b, binary.LittleEndian, &total); err != nil {
 		return nil, err
 	}
 
-	var i int
+	var i = 0
 	var buf bytes.Buffer
 	for {
 		data := make([]byte, 8)
 
 		// ccs = 3
-		data[0] |= 3 << 5
+		data[0] = UploadSegmentRequest
 
 		if i%2 == 1 {
 			// t = 1
@@ -114,7 +114,7 @@ func (upload Upload) Do(bus *can.Bus) ([]byte, error) {
 				Actual:   hasBit(resp.Frame.Data[0], 4),
 			}
 
-		} else if scs := resp.Frame.Data[0] >> 5; scs == 0 {
+		} else if scs := resp.Frame.Data[0] >> 5; scs != 0 {
 			return nil, canopen.UnexpectedSCSResponse{
 				Expected: 0,
 				Actual:   scs,
@@ -124,7 +124,22 @@ func (upload Upload) Do(bus *can.Bus) ([]byte, error) {
 		n := (resp.Frame.Data[0] >> 1) & 0x7
 		buf.Write(resp.Frame.Data[1 : 8-n])
 
+		// Check if we have received too many bytes
+		if buf.Len() > int(total) {
+			return nil, canopen.UnexpectedResponseLength{
+				Expected: int(total),
+				Actual:   buf.Len(),
+			}
+		}
+
 		if hasBit(resp.Frame.Data[0], 0) { // c = 1?
+			// Check if we have received too few bytes
+			if buf.Len() != int(total) {
+				return nil, canopen.UnexpectedResponseLength{
+					Expected: int(total),
+					Actual:   buf.Len(),
+				}
+			}
 			break
 		}
 	}

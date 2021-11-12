@@ -24,6 +24,15 @@ func (e UnexpectedSCSResponse) Error() string {
 	return fmt.Sprintf("unexpected server command specifier %X (expected %X)", e.Actual, e.Expected)
 }
 
+type UnexpectedResponseLength struct {
+	Expected int
+	Actual   int
+}
+
+func (e UnexpectedResponseLength) Error() string {
+	return fmt.Sprintf("unexpected response length %X (expected %X)", e.Actual, e.Expected)
+}
+
 type UnexpectedToggleBit struct {
 	Expected bool
 	Actual   bool
