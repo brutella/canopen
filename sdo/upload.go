@@ -34,7 +34,7 @@ func (upload Upload) Do(bus *can.Bus) ([]byte, error) {
 	canopen.Lock.Lock(key)
 	defer canopen.Lock.Unlock(key)
 
-	c := &canopen.Client{bus, time.Second * 2}
+	c := &canopen.Client{Bus: bus, Timeout: time.Second * 2}
 	// Initiate
 	frame := canopen.Frame{
 		CobID: upload.RequestCobID,
@@ -64,6 +64,11 @@ func (upload Upload) Do(bus *can.Bus) ([]byte, error) {
 			Expected: 2,
 			Actual:   scs,
 		}
+	}
+
+	// Check if this is the correct response for the requested message
+	if frame.Data[1] != upload.ObjectIndex.Index.B0 || frame.Data[2] != upload.ObjectIndex.Index.B1 || frame.Data[3] != upload.ObjectIndex.SubIndex {
+		return nil, canopen.TransferAbort{}
 	}
 
 	if hasBit(frame.Data[0], 1) { // e = 1?
@@ -113,33 +118,27 @@ func (upload Upload) Do(bus *can.Bus) ([]byte, error) {
 				Expected: hasBit(frame.Data[0], 4),
 				Actual:   hasBit(resp.Frame.Data[0], 4),
 			}
-
-		} /*else if scs := resp.Frame.Data[0] >> 5; scs != 0 {
-			return nil, canopen.UnexpectedSCSResponse{
-				Expected: 0,
-				Actual:   scs,
-			}
-		}*/
+		}
 
 		n := (resp.Frame.Data[0] >> 1) & 0x7
 		buf.Write(resp.Frame.Data[1 : 8-n])
 
 		// Check if we have received too many bytes
-		/*if buf.Len() > int(total) {
+		if buf.Len() > int(total) {
 			return nil, canopen.UnexpectedResponseLength{
 				Expected: int(total),
 				Actual:   buf.Len(),
 			}
-		}*/
+		}
 
 		if hasBit(resp.Frame.Data[0], 0) { // c = 1?
-			/*// Check if we have received too few bytes
+			// Check if we have received too few bytes
 			if buf.Len() != int(total) {
 				return nil, canopen.UnexpectedResponseLength{
 					Expected: int(total),
 					Actual:   buf.Len(),
 				}
-			}*/
+			}
 			break
 		}
 	}

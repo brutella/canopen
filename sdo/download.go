@@ -48,7 +48,7 @@ func (download Download) doInit(bus *can.Bus) error {
 	}
 
 	req := canopen.NewRequest(frame, uint32(download.ResponseCobID))
-	c := &canopen.Client{bus, time.Second * 2}
+	c := &canopen.Client{Bus: bus, Timeout: time.Second * 2}
 	resp, err := c.Do(req)
 	if err != nil {
 		return err
@@ -57,6 +57,10 @@ func (download Download) doInit(bus *can.Bus) error {
 	frame = resp.Frame
 	switch scs := frame.Data[0] >> 5; scs {
 	case 3: // response
+		// Check if this is the correct response for the requested message
+		if frame.Data[1] != download.ObjectIndex.Index.B0 || frame.Data[2] != download.ObjectIndex.Index.B1 || frame.Data[3] != download.ObjectIndex.SubIndex {
+			return canopen.TransferAbort{}
+		}
 		return nil
 	case 4: // abort
 		return canopen.TransferAbort{}
@@ -127,7 +131,7 @@ func (download Download) initFrame() (frame canopen.Frame, err error) {
 func (download Download) doSegments(bus *can.Bus) error {
 	frames := download.segmentFrames()
 
-	c := &canopen.Client{bus, time.Second * 2}
+	c := &canopen.Client{Bus: bus, Timeout: time.Second * 2}
 	for _, frame := range frames {
 		req := canopen.NewRequest(frame, uint32(download.ResponseCobID))
 		resp, err := c.Do(req)
