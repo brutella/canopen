@@ -1,5 +1,5 @@
-github.com/FabianPetersen/can v0.0.3 h1:AvNdtYRx/Qqd9ecVmPPk4/U27GT5kyvurtriWyASoMU=
-github.com/FabianPetersen/can v0.0.3/go.mod h1:K+0T7NSTiAhcH/zIYFPj4o256RKIwQ1Y/uHTC9MyK4I=
+github.com/FabianPetersen/can v0.0.4 h1:s2GsIYYCRBha1jlm8XhSMFQU3Ban7B1YB82aWglFK54=
+github.com/FabianPetersen/can v0.0.4/go.mod h1:K+0T7NSTiAhcH/zIYFPj4o256RKIwQ1Y/uHTC9MyK4I=
 github.com/jpillora/maplock v0.0.0-20160420012925-5c725ac6e22a h1:40K0UjFKjfaXcJaGMgf9C0fOzwDxPZMOI0CPbNP89cQ=
 github.com/jpillora/maplock v0.0.0-20160420012925-5c725ac6e22a/go.mod h1:bn3xq9G+QDq2j6fczyaTq47L6980t7/NnqCnCK7kqD0=
 golang.org/x/sys v0.0.0-20190429190828-d89cdac9e872 h1:cGjJzUd8RgBw428LXP65YXni0aiGNA4Bl+ls8SmLOm8=
