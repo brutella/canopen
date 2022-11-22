@@ -9,15 +9,18 @@ import (
 
 var Lock = maplock.New()
 
-type TransferAbort struct{}
+type TransferAbort struct {
+	AbortCode []uint8
+}
 
 func (e TransferAbort) Error() string {
 	return "Server aborted upload"
 }
 
 type UnexpectedSCSResponse struct {
-	Expected uint8
-	Actual   uint8
+	Expected  uint8
+	Actual    uint8
+	AbortCode []uint8
 }
 
 func (e UnexpectedSCSResponse) Error() string {
@@ -25,8 +28,9 @@ func (e UnexpectedSCSResponse) Error() string {
 }
 
 type UnexpectedResponseLength struct {
-	Expected int
-	Actual   int
+	Expected  int
+	Actual    int
+	AbortCode []uint8
 }
 
 func (e UnexpectedResponseLength) Error() string {
@@ -34,8 +38,9 @@ func (e UnexpectedResponseLength) Error() string {
 }
 
 type UnexpectedToggleBit struct {
-	Expected bool
-	Actual   bool
+	Expected  bool
+	Actual    bool
+	AbortCode []uint8
 }
 
 func (e UnexpectedToggleBit) Error() string {

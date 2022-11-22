@@ -59,15 +59,20 @@ func (download Download) doInit(bus *can.Bus) error {
 	case 3: // response
 		// Check if this is the correct response for the requested message
 		if frame.Data[1] != download.ObjectIndex.Index.B0 || frame.Data[2] != download.ObjectIndex.Index.B1 || frame.Data[3] != download.ObjectIndex.SubIndex {
-			return canopen.TransferAbort{}
+			return canopen.TransferAbort{
+				AbortCode: getAbortCodeBytes(frame),
+			}
 		}
 		return nil
 	case 4: // abort
-		return canopen.TransferAbort{}
+		return canopen.TransferAbort{
+			AbortCode: getAbortCodeBytes(frame),
+		}
 	default:
 		return canopen.UnexpectedSCSResponse{
-			Expected: 3,
-			Actual:   scs,
+			Expected:  3,
+			Actual:    scs,
+			AbortCode: getAbortCodeBytes(frame),
 		}
 	}
 }
@@ -143,19 +148,23 @@ func (download Download) doSegments(bus *can.Bus) error {
 		case 1:
 			break
 		case 4:
-			return canopen.TransferAbort{}
+			return canopen.TransferAbort{
+				AbortCode: getAbortCodeBytes(resp.Frame),
+			}
 		default:
 			return canopen.UnexpectedSCSResponse{
-				Expected: 1,
-				Actual:   scs,
+				Expected:  1,
+				Actual:    scs,
+				AbortCode: getAbortCodeBytes(resp.Frame),
 			}
 		}
 
 		// check toggle bit
 		if hasBit(frame.Data[0], 4) != hasBit(resp.Frame.Data[0], 4) {
 			return canopen.UnexpectedToggleBit{
-				Expected: hasBit(frame.Data[0], 4),
-				Actual:   hasBit(resp.Frame.Data[0], 4),
+				Expected:  hasBit(frame.Data[0], 4),
+				Actual:    hasBit(resp.Frame.Data[0], 4),
+				AbortCode: getAbortCodeBytes(resp.Frame),
 			}
 		}
 	}
