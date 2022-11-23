@@ -1,6 +1,6 @@
-github.com/FabianPetersen/can v0.1.1 h1:nXKFUr/BSGQmeVy0dDETdLbwaY/XPojc2oOQMddzKvY=
-github.com/FabianPetersen/can v0.1.1/go.mod h1:7CMrsMqMBxivPcK6OVu8lPr+Dlq4LiFP1+qdmV5O5zk=
+github.com/FabianPetersen/can v0.1.2 h1:/SkhpCvFGJx4vTAu7MhB2JutuwELiKXU1kY7gVVWx2E=
+github.com/FabianPetersen/can v0.1.2/go.mod h1:uT8EmEwshyYzjSRnkGryC5404DsYR8iH0ixWlZXseIs=
 github.com/jpillora/maplock v0.0.0-20160420012925-5c725ac6e22a h1:40K0UjFKjfaXcJaGMgf9C0fOzwDxPZMOI0CPbNP89cQ=
 github.com/jpillora/maplock v0.0.0-20160420012925-5c725ac6e22a/go.mod h1:bn3xq9G+QDq2j6fczyaTq47L6980t7/NnqCnCK7kqD0=
-golang.org/x/sys v0.2.0 h1:ljd4t30dBnAvMZaQCevtY0xLLD0A+bRZXbgLMLU1F/A=
-golang.org/x/sys v0.2.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab h1:2QkjZIsXupsJbJIdSjjUOgWK3aEtzyuh2mPt3l/CkeU=
+golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
