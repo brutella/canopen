@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"bytes"
-	"log"
 	"time"
 )
 
@@ -49,7 +48,6 @@ func (upload Upload) Do(bus *can.Bus) ([]byte, error) {
 	req := canopen.NewRequest(frame, uint32(upload.ResponseCobID))
 	resp, err := c.Do(req)
 	if err != nil {
-		log.Print(err)
 		return nil, err
 	}
 
