@@ -167,6 +167,7 @@ func (download Download) doSegments(bus *can.Bus) error {
 				AbortCode: getAbortCodeBytes(resp.Frame),
 			}
 		}
+		time.Sleep(2 * time.Millisecond)
 	}
 
 	return nil
