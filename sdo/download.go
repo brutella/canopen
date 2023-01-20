@@ -176,14 +176,14 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 		// Don't wait for the confirmation frame
 		index := 0
 		for ; index < segmentsPerBlock && (segmentIndex+index) < len(frames)-2; index++ {
-			err := bus.Publish(frames[segmentIndex+index])
+			err := bus.Publish(frames[segmentIndex+index].CANFrame())
 			if err != nil {
 				return err
 			}
 		}
 
 		// Wait for the confirmation frame
-		req := canopen.NewRequest(canopen.CANopenFrame(frames[segmentIndex+index+1]), uint32(download.ResponseCobID))
+		req := canopen.NewRequest(frames[segmentIndex+index+1], uint32(download.ResponseCobID))
 		resp, err := c.DoMinDuration(req, 1*time.Millisecond)
 		if err != nil {
 			return err
@@ -254,7 +254,7 @@ func (download Download) doSegments(bus *can.Bus) error {
 
 	c := &canopen.Client{Bus: bus, Timeout: time.Second * 2}
 	for _, frame := range frames {
-		req := canopen.NewRequest(canopen.CANopenFrame(frame), uint32(download.ResponseCobID))
+		req := canopen.NewRequest(frame, uint32(download.ResponseCobID))
 		resp, err := c.DoMinDuration(req, 2*time.Millisecond)
 		if err != nil {
 			return err
@@ -288,7 +288,7 @@ func (download Download) doSegments(bus *can.Bus) error {
 	return nil
 }
 
-func (download Download) segmentFrames(isBlockTransfer bool) (frames []can.Frame) {
+func (download Download) segmentFrames(isBlockTransfer bool) (frames []canopen.Frame) {
 	if !isBlockTransfer && len(download.Data) <= 4 {
 		return
 	}
@@ -327,12 +327,9 @@ func (download Download) segmentFrames(isBlockTransfer bool) (frames []can.Frame
 			fdata = append(fdata, 0x0)
 		}
 
-		// Convert slice to fixed size array
-		var arr [8]uint8
-		copy(arr[:], fdata)
-		frames = append(frames, can.Frame{
-			ID:   uint32(download.RequestCobID),
-			Data: arr,
+		frames = append(frames, canopen.Frame{
+			CobID: download.RequestCobID,
+			Data:  fdata,
 		})
 	}
 
