@@ -16,6 +16,7 @@ const (
 
 	UploadSegmentRequest  = 0x60 // 0110 0000
 	UploadSegmentResponse = 0x00 // 0000 0000
+	TransferAbort         = 0x80
 )
 
 // Upload represents a SDO upload process to read data from a CANopen
@@ -106,7 +107,7 @@ func (upload Upload) Do(bus *can.Bus) ([]byte, error) {
 		}
 
 		req = canopen.NewRequest(frame, uint32(upload.ResponseCobID))
-		resp, err = c.Do(req)
+		resp, err = c.DoMinDuration(req, 2*time.Millisecond)
 		if err != nil {
 			return nil, err
 		}

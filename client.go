@@ -57,9 +57,15 @@ type Client struct {
 // Do sends a request and waits for a response.
 // If the response frame doesn't arrive on time, an error is returned.
 func (c *Client) Do(req *Request) (*Response, error) {
+	return c.DoMinDuration(req, 10*time.Millisecond)
+}
+
+// DoMinDuration sends a request and waits for a response.
+// If the response frame doesn't arrive on time, an error is returned.
+func (c *Client) DoMinDuration(req *Request, min time.Duration) (*Response, error) {
 	rch := can.Wait(c.Bus, req.ResponseID, c.Timeout)
 
-	if err := c.Bus.Publish(req.Frame.CANFrame()); err != nil {
+	if err := c.Bus.PublishMinDuration(req.Frame.CANFrame(), min); err != nil {
 		return nil, err
 	}
 
