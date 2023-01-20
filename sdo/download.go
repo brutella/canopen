@@ -175,7 +175,7 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 	for segmentIndex := 0; segmentIndex < len(frames); {
 		// Don't wait for the confirmation frame
 		index := 0
-		for ; index+1 < segmentsPerBlock && (segmentIndex+index) < len(frames)-2; index++ {
+		for ; index+1 < segmentsPerBlock && (segmentIndex+index+1) < len(frames); index++ {
 			frames[segmentIndex+index].Data[0] = getFirstByte(index, false, 7, true)
 			err := bus.Publish(frames[segmentIndex+index].CANFrame())
 			if err != nil {
@@ -184,9 +184,9 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 		}
 
 		// Wait for the confirmation frame
-		frames[segmentIndex+index].Data[0] = getFirstByte(index, (segmentIndex+index) == len(frames)-1, 7, true)
+		frames[segmentIndex+index].Data[0] = getFirstByte(index, index < segmentsPerBlock, 7, true)
 		req := canopen.NewRequest(frames[segmentIndex+index], uint32(download.ResponseCobID))
-		resp, err := c.DoMinDuration(req, 1*time.Millisecond)
+		resp, err := c.DoMinDuration(req, 0)
 		if err != nil {
 			return err
 		}
