@@ -175,7 +175,7 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 	for segmentIndex := 0; segmentIndex < len(frames); {
 		// Don't wait for the confirmation frame
 		index := 0
-		for ; index < segmentsPerBlock && (segmentIndex+index) < len(frames)-2; index++ {
+		for ; index < segmentsPerBlock-1 && (segmentIndex+index) < len(frames)-2; index++ {
 			frames[segmentIndex+index].Data[0] = getFirstByte(index, false, 7, true)
 			err := bus.Publish(frames[segmentIndex+index].CANFrame())
 			if err != nil {
@@ -326,7 +326,7 @@ func getFirstByte(i int, isLast bool, junkLength int, isBlockTransfer bool) byte
 		}
 	} else {
 		// Set the segment number
-		firstByte = byte(i % 128)
+		firstByte = byte(1 + i)
 	}
 
 	if isLast {
