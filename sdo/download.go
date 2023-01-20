@@ -74,26 +74,30 @@ func (download Download) doInitFrame(bus *can.Bus, isBlockTransfer bool) (error,
 	if isBlockTransfer {
 		segmentsPerBlock = int(frame.Data[4])
 	}
-	switch scs := frame.Data[0] >> 5; scs {
-	case 3: // response
+
+	scs := frame.Data[0] >> 5
+	if !isBlockTransfer && scs == 3 || isBlockTransfer && scs == 5 { // Success
 		// Check if this is the correct response for the requested message
 		if frame.Data[1] != download.ObjectIndex.Index.B0 || frame.Data[2] != download.ObjectIndex.Index.B1 || frame.Data[3] != download.ObjectIndex.SubIndex {
 			return canopen.TransferAbort{
 				AbortCode: getAbortCodeBytes(frame),
 			}, segmentsPerBlock
 		}
-		return nil, segmentsPerBlock
-	case 4: // abort
+
+	} else if scs == 4 { // Abort
 		return canopen.TransferAbort{
 			AbortCode: getAbortCodeBytes(frame),
 		}, segmentsPerBlock
-	default:
+
+	} else {
 		return canopen.UnexpectedSCSResponse{
 			Expected:  3,
 			Actual:    scs,
 			AbortCode: getAbortCodeBytes(frame),
 		}, segmentsPerBlock
 	}
+
+	return nil, segmentsPerBlock
 }
 
 // initFrame returns the initial frame of the download.
