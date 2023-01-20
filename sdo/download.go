@@ -176,6 +176,7 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 		// Don't wait for the confirmation frame
 		index := 0
 		for ; index < segmentsPerBlock && (segmentIndex+index) < len(frames)-2; index++ {
+			frames[segmentIndex+index].Data[0] = getFirstByte(index, false, 7, true)
 			err := bus.Publish(frames[segmentIndex+index].CANFrame())
 			if err != nil {
 				return err
@@ -183,6 +184,7 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 		}
 
 		// Wait for the confirmation frame
+		frames[segmentIndex+index+1].Data[0] = getFirstByte(index+1, (segmentIndex+index+1) == len(frames)-1, 7, true)
 		req := canopen.NewRequest(frames[segmentIndex+index+1], uint32(download.ResponseCobID))
 		resp, err := c.DoMinDuration(req, 1*time.Millisecond)
 		if err != nil {
@@ -196,7 +198,7 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 		if scs == 5 && ss == 2 {
 			segmentsPerBlock = int(resp.Frame.Data[2])
 			ackSegment := int(resp.Frame.Data[1])
-			segmentIndex += ackSegment
+			segmentIndex += ackSegment + 1
 		} else {
 			return canopen.UnexpectedSCSResponse{
 				Expected:  5,
@@ -219,7 +221,7 @@ func (download Download) doBlockEnd(c *canopen.Client) error {
 	fdata := make([]byte, 8)
 
 	// n (Set the length of data in the last frame in the last segment)
-	fdata[0] |= uint8(7-len(download.Data)%7) << 2
+	fdata[0] |= uint8(7-(len(download.Data)%7)) << 2
 
 	// css = 6 (download init block request)
 	fdata[0] = setBit(fdata[0], 6)
@@ -295,32 +297,7 @@ func (download Download) segmentFrames(isBlockTransfer bool) (frames []canopen.F
 
 	junks := splitN(download.Data, 7)
 	for i, junk := range junks {
-		fdata := make([]byte, 1)
-
-		if !isBlockTransfer {
-			if len(junk) < 7 {
-				fdata[0] |= uint8(7-len(junk)) << 1
-			}
-
-			if i%2 == 1 {
-				// toggle bit 5
-				fdata[0] = setBit(fdata[0], 4)
-			}
-		} else {
-			// Set the segment number
-			fdata[0] = byte(i % 127)
-		}
-
-		if i == len(junks)-1 {
-			// c = 1 (no more segments to download)
-			if isBlockTransfer {
-				fdata[0] = setBit(fdata[0], 7)
-			} else {
-				fdata[0] = setBit(fdata[0], 0)
-			}
-		}
-
-		fdata = append(fdata, junk...)
+		fdata := append([]byte{getFirstByte(i, i == len(junks)-1, len(junk), isBlockTransfer)}, junk...)
 
 		// CiA301 Standard expects all (8) bytes to be sent
 		for len(fdata) < 8 {
@@ -334,4 +311,32 @@ func (download Download) segmentFrames(isBlockTransfer bool) (frames []canopen.F
 	}
 
 	return
+}
+
+func getFirstByte(i int, isLast bool, junkLength int, isBlockTransfer bool) byte {
+	firstByte := byte(0)
+	if !isBlockTransfer {
+		if junkLength < 7 {
+			firstByte |= uint8(7-junkLength) << 1
+		}
+
+		if i%2 == 1 {
+			// toggle bit 5
+			firstByte = setBit(firstByte, 4)
+		}
+	} else {
+		// Set the segment number
+		firstByte = byte(i % 128)
+	}
+
+	if isLast {
+		// c = 1 (no more segments to download)
+		if isBlockTransfer {
+			firstByte = setBit(firstByte, 7)
+		} else {
+			firstByte = setBit(firstByte, 0)
+		}
+	}
+
+	return firstByte
 }
