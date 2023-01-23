@@ -1,12 +1,12 @@
 package sdo
 
 import (
-	"github.com/FabianPetersen/can"
-	"github.com/FabianPetersen/canopen"
-	"strconv"
-
 	"bytes"
 	"encoding/binary"
+	"github.com/FabianPetersen/can"
+	"github.com/FabianPetersen/canopen"
+	"github.com/avast/retry-go"
+	"strconv"
 	"time"
 )
 
@@ -169,25 +169,32 @@ func (download Download) initFrame(isBlockTransfer bool) (frame canopen.Frame, e
 }
 
 func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
-	frames := download.segmentFrames(true)
-
-	c := &canopen.Client{Bus: bus, Timeout: time.Second * 2}
-	segmentIndex := 0
 	index := 0
+	segmentIndex := 0
+	frames := download.segmentFrames(true)
+	c := &canopen.Client{Bus: bus, Timeout: time.Second * 2}
 	for segmentIndex < len(frames) {
 		// Don't wait for the confirmation frame
 		var err error = nil
 		for ; err == nil && index+1 < segmentsPerBlock && (segmentIndex+index+1) < len(frames); index++ {
 			frames[segmentIndex+index].Data[0] = getFirstByte(index, false, 7, true)
-			err = bus.PublishMinDuration(frames[segmentIndex+index].CANFrame(), 2*time.Microsecond)
+			err = retry.Do(func() error {
+				return bus.PublishMinDuration(frames[segmentIndex+index].CANFrame(), 2*time.Millisecond)
+			}, retry.Attempts(5), retry.Delay(2*time.Millisecond))
 		}
 
 		// Wait for the confirmation frame
-		frames[segmentIndex+index].Data[0] = getFirstByte(index, segmentIndex+index+1 == len(frames), 7, true)
-		req := canopen.NewRequest(frames[segmentIndex+index], uint32(download.ResponseCobID))
-		resp, err := c.DoMinDuration(req, 1*time.Millisecond)
+		var resp *canopen.Response
+		var err1 error
+		err = retry.Do(func() error {
+			frames[segmentIndex+index].Data[0] = getFirstByte(index, segmentIndex+index+1 == len(frames), 7, true)
+			req := canopen.NewRequest(frames[segmentIndex+index], uint32(download.ResponseCobID))
+			resp, err1 = c.DoMinDuration(req, 2*time.Millisecond)
+			return err1
+		}, retry.Attempts(3), retry.Delay(2*time.Millisecond))
+
 		if err != nil {
-			return err
+			break
 		}
 
 		// Mask out the correct bits
