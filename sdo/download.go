@@ -172,18 +172,20 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 	frames := download.segmentFrames(true)
 
 	c := &canopen.Client{Bus: bus, Timeout: time.Second * 2}
-	for segmentIndex := 0; segmentIndex < len(frames); {
+	segmentIndex := 0
+	index := 0
+	for segmentIndex < len(frames) {
 		// Don't wait for the confirmation frame
-		index := 0
-		for ; index+1 < segmentsPerBlock && (segmentIndex+index+1) < len(frames); index++ {
+		var err error = nil
+		for ; err == nil && index+1 < segmentsPerBlock && (segmentIndex+index+1) < len(frames); index++ {
 			frames[segmentIndex+index].Data[0] = getFirstByte(index, false, 7, true)
-			_ = bus.PublishMinDuration(frames[segmentIndex+index].CANFrame(), 330*time.Microsecond)
+			err = bus.PublishMinDuration(frames[segmentIndex+index].CANFrame(), 330*time.Microsecond)
 		}
 
 		// Wait for the confirmation frame
 		frames[segmentIndex+index].Data[0] = getFirstByte(index, segmentIndex+index+1 == len(frames), 7, true)
 		req := canopen.NewRequest(frames[segmentIndex+index], uint32(download.ResponseCobID))
-		resp, err := c.DoMinDuration(req, 330*time.Microsecond)
+		resp, err := c.DoMinDuration(req, 1*time.Millisecond)
 		if err != nil {
 			return err
 		}
@@ -195,7 +197,15 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 		if scs == 5 && ss == 2 {
 			segmentsPerBlock = int(resp.Frame.Data[2])
 			ackSegment := int(resp.Frame.Data[1])
-			segmentIndex += ackSegment
+
+			// Everything is fine, move along please
+			if ackSegment == segmentsPerBlock {
+				segmentIndex += ackSegment
+				index = 0
+				// Retry from the last acked segment
+			} else {
+				index = ackSegment
+			}
 		} else {
 			return canopen.UnexpectedSCSResponse{
 				Expected:  5,
