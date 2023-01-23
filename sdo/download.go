@@ -171,6 +171,8 @@ func (download Download) initFrame(isBlockTransfer bool) (frame canopen.Frame, e
 func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 	index := 0
 	segmentIndex := 0
+	delay := 660 * time.Microsecond
+	retryDelay := 2 * time.Millisecond
 	frames := download.segmentFrames(true)
 	c := &canopen.Client{Bus: bus, Timeout: time.Second * 2}
 	for segmentIndex < len(frames) {
@@ -179,8 +181,8 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 		for ; err == nil && index+1 < segmentsPerBlock && (segmentIndex+index+1) < len(frames); index++ {
 			frames[segmentIndex+index].Data[0] = getFirstByte(index, false, 7, true)
 			err = retry.Do(func() error {
-				return bus.PublishMinDuration(frames[segmentIndex+index].CANFrame(), 2*time.Millisecond)
-			}, retry.Attempts(5), retry.Delay(2*time.Millisecond))
+				return bus.PublishMinDuration(frames[segmentIndex+index].CANFrame(), delay)
+			}, retry.Attempts(5), retry.Delay(retryDelay))
 		}
 
 		// Wait for the confirmation frame
@@ -189,9 +191,9 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 		err = retry.Do(func() error {
 			frames[segmentIndex+index].Data[0] = getFirstByte(index, segmentIndex+index+1 == len(frames), 7, true)
 			req := canopen.NewRequest(frames[segmentIndex+index], uint32(download.ResponseCobID))
-			resp, err1 = c.DoMinDuration(req, 2*time.Millisecond)
+			resp, err1 = c.DoMinDuration(req, delay)
 			return err1
-		}, retry.Attempts(3), retry.Delay(2*time.Millisecond))
+		}, retry.Attempts(3), retry.Delay(retryDelay))
 
 		if err != nil {
 			break
@@ -205,10 +207,11 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 			segmentsPerBlock = int(resp.Frame.Data[2])
 			ackSegment := int(resp.Frame.Data[1])
 
-			// Everything is fine, move along please
-			if ackSegment == segmentsPerBlock {
+			// If last segment (Everything is fine, move along please)
+			if segmentIndex+index+1 == len(frames) || ackSegment == segmentsPerBlock {
 				segmentIndex += ackSegment
 				index = 0
+
 				// Retry from the last acked segment
 			} else {
 				index = ackSegment
