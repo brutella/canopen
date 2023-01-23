@@ -171,8 +171,8 @@ func (download Download) initFrame(isBlockTransfer bool) (frame canopen.Frame, e
 func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 	index := 0
 	segmentIndex := 0
-	delay := 660 * time.Microsecond
-	retryDelay := 2 * time.Millisecond
+	delay := 500 * time.Microsecond
+	retryDelay := 1 * time.Millisecond
 	frames := download.segmentFrames(true)
 	c := &canopen.Client{Bus: bus, Timeout: time.Second * 2}
 	for segmentIndex < len(frames) {
@@ -182,7 +182,7 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 			frames[segmentIndex+index].Data[0] = getFirstByte(index, false, 7, true)
 			err = retry.Do(func() error {
 				return bus.PublishMinDuration(frames[segmentIndex+index].CANFrame(), delay)
-			}, retry.Attempts(5), retry.Delay(retryDelay))
+			}, retry.Attempts(10), retry.Delay(retryDelay))
 		}
 
 		// Wait for the confirmation frame
@@ -193,7 +193,7 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 			req := canopen.NewRequest(frames[segmentIndex+index], uint32(download.ResponseCobID))
 			resp, err1 = c.DoMinDuration(req, delay)
 			return err1
-		}, retry.Attempts(3), retry.Delay(retryDelay))
+		}, retry.Attempts(5), retry.Delay(retryDelay))
 
 		if err != nil {
 			break
