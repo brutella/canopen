@@ -198,7 +198,7 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 		if scs == 5 && ss == 2 {
 			segmentsPerBlock = int(resp.Frame.Data[2])
 			ackSegment := int(resp.Frame.Data[1])
-			segmentIndex += ackSegment + 1
+			segmentIndex += ackSegment
 		} else {
 			return canopen.UnexpectedSCSResponse{
 				Expected:  5,
@@ -231,7 +231,7 @@ func (download Download) doBlockEnd(c *canopen.Client) error {
 	fdata[0] = setBit(fdata[0], 0)
 
 	req := canopen.NewRequest(canopen.NewFrame(download.RequestCobID, fdata), uint32(download.ResponseCobID))
-	resp, err := c.DoMinDuration(req, 5*time.Millisecond)
+	resp, err := c.DoMinDuration(req, 0)
 
 	if err != nil {
 		return err
