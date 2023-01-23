@@ -179,7 +179,7 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 		var err error = nil
 		for ; err == nil && index+1 < segmentsPerBlock && (segmentIndex+index+1) < len(frames); index++ {
 			frames[segmentIndex+index].Data[0] = getFirstByte(index, false, 7, true)
-			err = bus.PublishMinDuration(frames[segmentIndex+index].CANFrame(), 330*time.Microsecond)
+			err = bus.PublishMinDuration(frames[segmentIndex+index].CANFrame(), 660*time.Microsecond)
 		}
 
 		// Wait for the confirmation frame
