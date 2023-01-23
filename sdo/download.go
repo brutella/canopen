@@ -177,13 +177,13 @@ func (download Download) doBlock(bus *can.Bus, segmentsPerBlock int) error {
 		index := 0
 		for ; index+1 < segmentsPerBlock && (segmentIndex+index+1) < len(frames); index++ {
 			frames[segmentIndex+index].Data[0] = getFirstByte(index, false, 7, true)
-			_ = bus.PublishMinDuration(frames[segmentIndex+index].CANFrame(), time.Microsecond)
+			_ = bus.PublishMinDuration(frames[segmentIndex+index].CANFrame(), 330*time.Microsecond)
 		}
 
 		// Wait for the confirmation frame
 		frames[segmentIndex+index].Data[0] = getFirstByte(index, segmentIndex+index+1 == len(frames), 7, true)
 		req := canopen.NewRequest(frames[segmentIndex+index], uint32(download.ResponseCobID))
-		resp, err := c.DoMinDuration(req, time.Microsecond)
+		resp, err := c.DoMinDuration(req, 330*time.Microsecond)
 		if err != nil {
 			return err
 		}
