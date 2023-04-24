@@ -14,7 +14,7 @@ type TransferAbort struct {
 }
 
 func (e TransferAbort) Error() string {
-	return "Server aborted upload"
+	return fmt.Sprintf("Server aborted upload: %v", e.AbortCode)
 }
 
 type UnexpectedSCSResponse struct {
